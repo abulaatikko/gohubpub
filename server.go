@@ -14,33 +14,33 @@ const (
 )
 
 func main() {
-
     fmt.Println("Server initializing...")
     ln, err := net.Listen(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
-    if err != nil {
+    if (err != nil) {
         fmt.Println("Error (LISTEN): ", err.Error())
         os.Exit(1)
     }
-
     defer ln.Close()
+
     fmt.Println("Server listening " + CONNECTION_HOST + ":" + CONNECTION_PORT + "...")
 
+    conn, err := ln.Accept()
+    if (err != nil) {
+        fmt.Println("Error (ACCEPT): ", err.Error())
+        os.Exit(1)
+    }
+
+    reader := bufio.NewReader(conn)
+    writer := bufio.NewWriter(conn)
+
     for {
-        conn, err := ln.Accept()
-        if err != nil {
-            fmt.Println("Error (ACCEPT): ", err.Error())
+        message, err := reader.ReadString('\n')
+        if (err != nil) {
+            fmt.Println("Error (READ): ", err.Error())
             os.Exit(1)
         }
 
-        message, err := bufio.NewReader(conn).ReadString('\n')
-        if err != nil {
-            fmt.Println("Error (READ): ", err.Error())
-        }
-
-        fmt.Print("Message received: ", string(message))
-        conn.Write([]byte("Message is back: " + message + "\n"))
-
-        conn.Close()
+        fmt.Print("Message Received:", string(message))
+        writer.WriteString(message)
     }
-
 }
