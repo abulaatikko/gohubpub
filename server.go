@@ -81,13 +81,19 @@ func (hub *Hub) Broadcast(data string) {
 func (hub *Hub) Join(connection net.Conn) {
     client := CreateClient(connection)
     hub.clients = append(hub.clients, client)
-    go func() {
-        for {
-            hub.in <- <-client.in
+
+    go hub.ListenClient(client)
+}
+
+func (hub *Hub) ListenClient(client *Client) {
+    for {
+        in := <-client.in
+        if (in == "/whoami\n") {
+            client.out <- fmt.Sprintf("%d", client.user_id)
+        } else {
+            hub.in <- in
         }
-    }()
-    client.writer.WriteString("Your user_id: " + fmt.Sprintf("%d", client.user_id))
-    client.writer.Flush()
+    }
 }
 
 func (hub *Hub) Write(data string) {
@@ -96,17 +102,15 @@ func (hub *Hub) Write(data string) {
 }
 
 func (hub *Hub) Listen() {
-    go func() {
-        for {
-            select {
-            case data := <-hub.in:
-                hub.Broadcast(data)
-                hub.Write(data)
-            case conn := <-hub.connections:
-                hub.Join(conn)
-            }
+    for {
+        select {
+        case data := <-hub.in:
+            hub.Broadcast(data)
+            hub.Write(data)
+        case conn := <-hub.connections:
+            hub.Join(conn)
         }
-    }()
+    }
 }
 
 func CreateHub() *Hub {
@@ -120,7 +124,7 @@ func CreateHub() *Hub {
         writer: writer,
     }
 
-    hub.Listen()
+    go hub.Listen()
 
     return hub
 }
