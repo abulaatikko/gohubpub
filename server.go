@@ -2,10 +2,25 @@ package main
 
 import (
     "net"
+    "bufio"
     "fmt"
     "os"
-    "bufio"
 )
+
+type Client struct {
+    in chan string
+    out chan string
+    reader *bufio.Reader
+    writer *bufio.Writer
+}
+
+type Hub struct {
+    clients []*Client
+    connections chan net.Conn
+    in chan string
+    out chan string
+    writer *bufio.Writer
+}
 
 const (
     CONNECTION_TYPE = "tcp"
@@ -13,38 +28,115 @@ const (
     CONNECTION_PORT = "7010"
 )
 
-func main() {
-    fmt.Println("Server initializing...")
-    ln, err := net.Listen(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
-    if (err != nil) {
-        fmt.Println("Error (LISTEN): ", err.Error())
-        os.Exit(1)
-    }
-    defer ln.Close()
-
-    fmt.Println("Server listening " + CONNECTION_HOST + ":" + CONNECTION_PORT + "...")
-
-    conn, err := ln.Accept()
-    if (err != nil) {
-        fmt.Println("Error (ACCEPT): ", err.Error())
-        os.Exit(1)
-    }
-
-    reader := bufio.NewReader(conn)
-    writerConn := bufio.NewWriter(conn)
-    writerStdo := bufio.NewWriter(os.Stdout)
-
+func (client *Client) Read() {
     for {
-        message, err := reader.ReadString('\n')
+        line, err := client.reader.ReadString('\n')
         if (err != nil) {
             fmt.Println("Error (READ): ", err.Error())
             os.Exit(1)
         }
-
-        writerStdo.WriteString("Message Received: " + message)
-        writerStdo.Flush()
-
-        writerConn.WriteString(message)
-        writerConn.Flush()
+        client.in <- line
     }
 }
+
+func (client *Client) Write() {
+    for data := range client.out {
+        client.writer.WriteString(data)
+        client.writer.Flush()
+    }
+}
+
+func (client *Client) Listen() {
+    go client.Read()
+    go client.Write()
+}
+
+func CreateClient(connection net.Conn) *Client {
+    writer := bufio.NewWriter(connection)
+    reader := bufio.NewReader(connection)
+
+    client := &Client{
+        in: make(chan string),
+        out: make(chan string),
+        reader: reader,
+        writer: writer,
+    }
+
+    client.Listen()
+
+    return client
+}
+
+func (hub *Hub) Broadcast(data string) {
+    for _, client := range hub.clients {
+        client.out <- data
+    }
+}
+
+func (hub *Hub) Join(connection net.Conn) {
+    client := CreateClient(connection)
+    hub.clients = append(hub.clients, client)
+    go func() {
+        for {
+            hub.in <- <-client.in
+        }
+    }()
+}
+
+func (hub *Hub) Write(data string) {
+    hub.writer.WriteString(data)
+    hub.writer.Flush()
+}
+
+func (hub *Hub) Listen() {
+    go func() {
+        for {
+            select {
+            case data := <-hub.in:
+                hub.Broadcast(data)
+                hub.Write(data)
+                break
+            case conn := <-hub.connections:
+                hub.Join(conn)
+                break
+            }
+        }
+    }()
+}
+
+func CreateHub() *Hub {
+    writer := bufio.NewWriter(os.Stdout)
+
+    hub := &Hub{
+        clients: make([]*Client, 0),
+        connections: make(chan net.Conn),
+        in: make(chan string),
+        out: make(chan string),
+        writer: writer,
+    }
+
+    hub.Listen()
+
+    return hub
+}
+
+func main() {
+    fmt.Println("Server initializing...")
+    hub := CreateHub()
+
+    listener, err := net.Listen(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
+    if (err != nil) {
+        fmt.Println("Error (LISTEN): ", err.Error())
+        os.Exit(1)
+    }
+
+    for {
+        conn, err := listener.Accept()
+        if (err != nil) {
+            fmt.Println("Error (LISTEN): ", err.Error())
+            os.Exit(1)
+        }
+        hub.connections <- conn
+    }
+}
+
