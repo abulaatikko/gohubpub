@@ -95,10 +95,8 @@ func (hub *Hub) Listen() {
             case data := <-hub.in:
                 hub.Broadcast(data)
                 hub.Write(data)
-                break
             case conn := <-hub.connections:
                 hub.Join(conn)
-                break
             }
         }
     }()
