@@ -31,7 +31,8 @@ func main() {
     }
 
     reader := bufio.NewReader(conn)
-    writer := bufio.NewWriter(conn)
+    writerConn := bufio.NewWriter(conn)
+    writerStdo := bufio.NewWriter(os.Stdout)
 
     for {
         message, err := reader.ReadString('\n')
@@ -40,7 +41,10 @@ func main() {
             os.Exit(1)
         }
 
-        fmt.Print("Message Received:", string(message))
-        writer.WriteString(message)
+        writerStdo.WriteString("Message Received: " + message)
+        writerStdo.Flush()
+
+        writerConn.WriteString(message)
+        writerConn.Flush()
     }
 }

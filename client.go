@@ -21,16 +21,30 @@ func Send(conn net.Conn) {
     writer := bufio.NewWriter(conn)
 
     for ;running; {
-        fmt.Print("> ")
         input, err := reader.ReadString('\n')
         if (err != nil) {
-            fmt.Println("Error (READ): ", err.Error())
+            fmt.Println("Error (STDIN READ): ", err.Error())
         }
         if (input == "/quit\n") {
             running = false
         }
         writer.WriteString(input)
-        writer.Flush();
+        writer.Flush()
+    }
+}
+
+func Read(conn net.Conn) {
+    reader := bufio.NewReader(conn)
+    writer := bufio.NewWriter(os.Stdout)
+
+    for ;running; {
+        input, err := reader.ReadString('\n')
+        if (err != nil) {
+            fmt.Println("ERROR (CONNECTION READ): ", err.Error())
+        }
+        writer.WriteString("SERVER: " + input)
+        writer.WriteString("> ")
+        writer.Flush()
     }
 }
 
@@ -43,7 +57,10 @@ func main() {
     }
     defer conn.Close()
 
-    go Send(conn);
+    fmt.Print("> ")
+
+    go Send(conn)
+    go Read(conn)
 
     for ;running; {
         time.Sleep(3600 * 24 * 7 * 365);
