@@ -89,7 +89,9 @@ func (hub *Hub) ListenClient(client *Client) {
     for {
         in := <-client.in
         if (in == "/whoami\n") {
-            client.out <- fmt.Sprintf("%d", client.user_id) + "\n"
+            client.out <- fmt.Sprintf("Your user_id is: %d", client.user_id) + "\n"
+        } else if (in == "/list\n") {
+            hub.ListClients(client)
         } else {
             hub.in <- in
         }
@@ -110,6 +112,19 @@ func (hub *Hub) Listen() {
         case conn := <-hub.connections:
             hub.Join(conn)
         }
+    }
+}
+
+func (hub *Hub) ListClients(forClient *Client) {
+    onlyMe := true
+    for _, client := range hub.clients {
+        if (forClient.user_id != client.user_id) {
+            forClient.out <- fmt.Sprintf("%d", client.user_id) + "\n"
+            onlyMe = false
+        }
+    }
+    if (onlyMe == true) {
+        forClient.out <- "No one else here :(.\n"
     }
 }
 
