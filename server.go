@@ -5,11 +5,13 @@ import (
     "bufio"
     "fmt"
     "os"
+    "time"
 )
 
 type Client struct {
     in chan string
     out chan string
+    user_id uint64
     reader *bufio.Reader
     writer *bufio.Writer
 }
@@ -55,11 +57,14 @@ func CreateClient(connection net.Conn) *Client {
     writer := bufio.NewWriter(connection)
     reader := bufio.NewReader(connection)
 
+    user_id := uint64(time.Now().UnixNano())
+
     client := &Client{
         in: make(chan string),
         out: make(chan string),
         reader: reader,
         writer: writer,
+        user_id: user_id,
     }
 
     client.Listen()
@@ -81,6 +86,8 @@ func (hub *Hub) Join(connection net.Conn) {
             hub.in <- <-client.in
         }
     }()
+    client.writer.WriteString("Your user_id: " + fmt.Sprintf("%d", client.user_id))
+    client.writer.Flush()
 }
 
 func (hub *Hub) Write(data string) {
