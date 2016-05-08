@@ -89,7 +89,7 @@ func (hub *Hub) ListenClient(client *Client) {
     for {
         in := <-client.in
         if (in == "/whoami\n") {
-            client.out <- fmt.Sprintf("%d", client.user_id)
+            client.out <- fmt.Sprintf("%d", client.user_id) + "\n"
         } else {
             hub.in <- in
         }
