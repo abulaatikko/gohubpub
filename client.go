@@ -6,6 +6,7 @@ import (
     "bufio"
     "os"
     "time"
+    "strings"
 )
 
 var running bool
@@ -25,7 +26,7 @@ func Send(conn net.Conn) {
         if (err != nil) {
             fmt.Println("Error (STDIN READ): ", err.Error())
         }
-        if (input == "/quit\n") {
+        if (strings.HasPrefix(input, "/quit")) {
             running = false
         }
         writer.WriteString(input)
@@ -42,7 +43,7 @@ func Read(conn net.Conn) {
         if (err != nil) {
             fmt.Println("ERROR (CONNECTION READ): ", err.Error())
         }
-        writer.WriteString("SERVER: " + input)
+        writer.WriteString(input)
         writer.WriteString("> ")
         writer.Flush()
     }

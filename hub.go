@@ -6,6 +6,7 @@ import (
     "fmt"
     "os"
     "time"
+    "strings"
 )
 
 type Client struct {
@@ -88,10 +89,12 @@ func (hub *Hub) Join(connection net.Conn) {
 func (hub *Hub) ListenClient(client *Client) {
     for {
         in := <-client.in
-        if (in == "/whoami\n") {
-            client.out <- fmt.Sprintf("Your user_id is: %d", client.user_id) + "\n"
-        } else if (in == "/list\n") {
+        if (strings.HasPrefix(in, "/whoami")) {
+            client.out <- "hub> " + fmt.Sprintf("%d", client.user_id) + "\n"
+        } else if (strings.HasPrefix(in, "/list")) {
             hub.ListClients(client)
+        } else if (strings.HasPrefix(in, "/msg")) {
+            hub.SendMessage(client, in)
         } else {
             hub.in <- in
         }
@@ -115,16 +118,30 @@ func (hub *Hub) Listen() {
     }
 }
 
+func (hub *Hub) SendMessage(forClient *Client, message string) {
+    s := strings.Split(message, " ");
+    receivers, body := s[1], s[2]
+    r := strings.Split(receivers, ",")
+    for _, client := range hub.clients {
+        for _, receiver := range r {
+            if (fmt.Sprintf("%d", client.user_id) == receiver) {
+                client.out <- fmt.Sprintf("%d", forClient.user_id) + "> " + body + "\n"
+            }
+        }
+    }
+    forClient.out <- "hub> MESSAGE DELIVERED" + "\n"
+}
+
 func (hub *Hub) ListClients(forClient *Client) {
     onlyMe := true
     for _, client := range hub.clients {
         if (forClient.user_id != client.user_id) {
-            forClient.out <- fmt.Sprintf("%d", client.user_id) + "\n"
+            forClient.out <- "hub> " + fmt.Sprintf("%d", client.user_id) + "\n"
             onlyMe = false
         }
     }
     if (onlyMe == true) {
-        forClient.out <- "No one else here :(.\n"
+        forClient.out <- "hub> No one else here :(\n"
     }
 }
 
