@@ -27,8 +27,18 @@ func Send(conn net.Conn) {
             fmt.Println("Error (STDIN READ): ", err.Error())
             os.Exit(1)
         }
-        if (strings.HasPrefix(input, "/quit")) {
+        if (strings.HasPrefix(input, "/list")) {
+        } else if (strings.HasPrefix(input, "/msg")) {
+        } else if (strings.HasPrefix(input, "/whoami")) {
+        } else if (strings.HasPrefix(input, "/quit")) {
             running = false
+        } else {
+            fmt.Println("Supported commands:")
+            fmt.Println("  /whoami")
+            fmt.Println("  /list")
+            fmt.Println("  /msg [user_id1,user_id2,...] [message]")
+            fmt.Print("> ")
+            continue
         }
         writer.WriteString(input)
         writer.Flush()
