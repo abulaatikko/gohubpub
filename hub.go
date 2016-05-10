@@ -95,11 +95,10 @@ func (hub *Hub) SendMessage(forClient *Client, message string) {
     for _, client := range hub.clients {
         for _, receiver := range r {
             if (fmt.Sprintf("%d", client.user_id) == receiver) {
-                client.out <- fmt.Sprintf("%d", forClient.user_id) + "> " + body + "\n"
+                client.out <- fmt.Sprintf("%d", forClient.user_id) + "> " + body
             }
         }
     }
-    forClient.out <- "hub> MESSAGE DELIVERED" + "\n"
 }
 
 func (hub *Hub) ListClients(forClient *Client) {

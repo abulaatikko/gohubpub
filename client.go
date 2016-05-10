@@ -37,7 +37,6 @@ func Send(conn net.Conn) {
             fmt.Println("  /whoami")
             fmt.Println("  /list")
             fmt.Println("  /msg [user_id1,user_id2,...] [message]")
-            fmt.Print("> ")
             continue
         }
         writer.WriteString(input)
@@ -56,7 +55,6 @@ func Read(conn net.Conn) {
             os.Exit(1)
         }
         writer.WriteString(input)
-        writer.WriteString("> ")
         writer.Flush()
     }
 }
@@ -71,8 +69,6 @@ func main() {
 
     // close the connection when main() returns
     defer conn.Close()
-
-    fmt.Print("> ")
 
     go Send(conn)
     go Read(conn)
