@@ -159,22 +159,23 @@ func CreateClient(connection net.Conn) *Client {
     return client
 }
 
+func HandleError(err error, message string) {
+    if (err != nil) {
+        fmt.Println("ERROR (" + message + "): ", err.Error())
+        os.Exit(1)
+    }
+}
+
 func main() {
     fmt.Println("Server initializing...")
     hub := CreateHub()
 
     listener, err := net.Listen(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
-    if (err != nil) {
-        fmt.Println("Error (LISTEN): ", err.Error())
-        os.Exit(1)
-    }
+    HandleError(err, "LISTEN")
 
     for {
         conn, err := listener.Accept()
-        if (err != nil) {
-            fmt.Println("Error (LISTEN): ", err.Error())
-            os.Exit(1)
-        }
+        HandleError(err, "ACCEPT")
         hub.connections <- conn
     }
 }
