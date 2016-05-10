@@ -50,12 +50,6 @@ func (client *Client) Write() {
     }
 }
 
-func (hub *Hub) Broadcast(data string) {
-    for _, client := range hub.clients {
-        client.out <- data
-    }
-}
-
 func (hub *Hub) Join(connection net.Conn) {
     client := CreateClient(connection)
     hub.clients = append(hub.clients, client)
@@ -74,8 +68,6 @@ func (hub *Hub) ListenClient(client *Client) {
             hub.SendMessage(client, in)
         } else if (strings.HasPrefix(in, "/quit")) {
             hub.QuitClient(client)
-        } else {
-            hub.in <- in
         }
     }
 }
@@ -89,7 +81,6 @@ func (hub *Hub) Listen() {
     for {
         select {
         case data := <-hub.in:
-            hub.Broadcast(data)
             hub.Write(data)
         case conn := <-hub.connections:
             hub.Join(conn)
