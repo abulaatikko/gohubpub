@@ -56,6 +56,8 @@ func main() {
         fmt.Println("Error (DIAL): ", err.Error())
         os.Exit(1)
     }
+
+    // close the connection when main() returns
     defer conn.Close()
 
     fmt.Print("> ")

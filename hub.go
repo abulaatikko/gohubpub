@@ -9,6 +9,12 @@ import (
     "strings"
 )
 
+const (
+    CONNECTION_TYPE = "tcp"
+    CONNECTION_HOST = "localhost"
+    CONNECTION_PORT = "7010"
+)
+
 type Client struct {
     in chan string
     out chan string
@@ -25,11 +31,10 @@ type Hub struct {
     writer *bufio.Writer
 }
 
-const (
-    CONNECTION_TYPE = "tcp"
-    CONNECTION_HOST = "localhost"
-    CONNECTION_PORT = "7010"
-)
+func (client *Client) Listen() {
+    go client.Read()
+    go client.Write()
+}
 
 func (client *Client) Read() {
     for {
@@ -47,30 +52,6 @@ func (client *Client) Write() {
         client.writer.WriteString(data)
         client.writer.Flush()
     }
-}
-
-func (client *Client) Listen() {
-    go client.Read()
-    go client.Write()
-}
-
-func CreateClient(connection net.Conn) *Client {
-    writer := bufio.NewWriter(connection)
-    reader := bufio.NewReader(connection)
-
-    user_id := uint64(time.Now().UnixNano())
-
-    client := &Client{
-        in: make(chan string),
-        out: make(chan string),
-        reader: reader,
-        writer: writer,
-        user_id: user_id,
-    }
-
-    client.Listen()
-
-    return client
 }
 
 func (hub *Hub) Broadcast(data string) {
@@ -159,6 +140,25 @@ func CreateHub() *Hub {
     go hub.Listen()
 
     return hub
+}
+
+func CreateClient(connection net.Conn) *Client {
+    writer := bufio.NewWriter(connection)
+    reader := bufio.NewReader(connection)
+
+    user_id := uint64(time.Now().UnixNano())
+
+    client := &Client{
+        in: make(chan string),
+        out: make(chan string),
+        reader: reader,
+        writer: writer,
+        user_id: user_id,
+    }
+
+    client.Listen()
+
+    return client
 }
 
 func main() {
