@@ -25,6 +25,7 @@ func Send(conn net.Conn) {
         input, err := reader.ReadString('\n')
         if (err != nil) {
             fmt.Println("Error (STDIN READ): ", err.Error())
+            os.Exit(1)
         }
         if (strings.HasPrefix(input, "/quit")) {
             running = false
@@ -42,6 +43,7 @@ func Read(conn net.Conn) {
         input, err := reader.ReadString('\n')
         if (err != nil) {
             fmt.Println("ERROR (CONNECTION READ): ", err.Error())
+            os.Exit(1)
         }
         writer.WriteString(input)
         writer.WriteString("> ")

@@ -38,11 +38,7 @@ func (client *Client) Listen() {
 
 func (client *Client) Read() {
     for {
-        line, err := client.reader.ReadString('\n')
-        if (err != nil) {
-            fmt.Println("Error (READ): ", err.Error())
-            os.Exit(1)
-        }
+        line, _ := client.reader.ReadString('\n')
         client.in <- line
     }
 }
@@ -76,6 +72,8 @@ func (hub *Hub) ListenClient(client *Client) {
             hub.ListClients(client)
         } else if (strings.HasPrefix(in, "/msg")) {
             hub.SendMessage(client, in)
+        } else if (strings.HasPrefix(in, "/quit")) {
+            hub.QuitClient(client)
         } else {
             hub.in <- in
         }
@@ -124,6 +122,16 @@ func (hub *Hub) ListClients(forClient *Client) {
     if (onlyMe == true) {
         forClient.out <- "hub> No one else here :(\n"
     }
+}
+
+func (hub *Hub) QuitClient(client *Client) {
+    var tmpClients = make([]*Client, 0)
+    for _, c := range hub.clients {
+        if (c.user_id != client.user_id) {
+            tmpClients = append(tmpClients, c)
+        }
+    }
+    hub.clients = tmpClients
 }
 
 func CreateHub() *Hub {
