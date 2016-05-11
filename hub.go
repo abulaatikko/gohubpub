@@ -24,18 +24,24 @@ type Client struct {
 }
 
 type Hub struct {
-    clients []*Client
-    connections chan net.Conn
     in chan string
     out chan string
+    clients []*Client
+    connections chan net.Conn
     writer *bufio.Writer
 }
 
-func (client *Client) Listen() {
+/**
+ * The function initializes communication from and to the client.
+ */
+func (client *Client) InitCommunication() {
     go client.Read()
-    go client.Write()
+    go client.Send()
 }
 
+/**
+ * The function reads data from the client.
+ */
 func (client *Client) Read() {
     for {
         line, _ := client.reader.ReadString('\n')
@@ -43,41 +49,62 @@ func (client *Client) Read() {
     }
 }
 
-func (client *Client) Write() {
+/**
+ * The function sends data to the client.
+ */
+func (client *Client) Send() {
     for data := range client.out {
         client.writer.WriteString(data)
         client.writer.Flush()
     }
 }
 
+/**
+ * The function joins client to the hub.
+ *
+ * @param net.Conn connection
+ */
 func (hub *Hub) Join(connection net.Conn) {
-    client := CreateClient(connection)
+    client := InitClient(connection)
     hub.clients = append(hub.clients, client)
 
     go hub.ListenClient(client)
 }
 
+/**
+ * The function decides what to do for the client requests.
+ *
+ * @param Client client
+ */
 func (hub *Hub) ListenClient(client *Client) {
     for {
         in := <-client.in
         if (strings.HasPrefix(in, "/whoami")) {
-            client.out <- "hub> " + fmt.Sprintf("%d", client.user_id) + "\n"
+            hub.TellIdentity(client)
         } else if (strings.HasPrefix(in, "/list")) {
             hub.ListClients(client)
         } else if (strings.HasPrefix(in, "/msg")) {
             hub.SendMessage(client, in)
         } else if (strings.HasPrefix(in, "/quit")) {
-            hub.QuitClient(client)
+            hub.UnjoinClient(client)
         }
     }
 }
 
-func (hub *Hub) Write(data string) {
-    hub.writer.WriteString(data)
+/**
+ * The function prints data to the hub.
+ *
+ * @param string message
+ */
+func (hub *Hub) Write(message string) {
+    hub.writer.WriteString(message)
     hub.writer.Flush()
 }
 
-func (hub *Hub) Listen() {
+/**
+ * The function listens to the new connections and incoming data
+ */
+func (hub *Hub) ListenChannels() {
     for {
         select {
         case data := <-hub.in:
@@ -88,6 +115,12 @@ func (hub *Hub) Listen() {
     }
 }
 
+/**
+ * The function implements the /msg command.
+ *
+ * @param Client fromClient
+ * @param string message
+ */
 func (hub *Hub) SendMessage(fromClient *Client, message string) {
     if (strings.Count(message, " ") <= 1) {
         fromClient.out <- "hub> Invalid /msg command parameters. Use /msg [user_id1,user_id2,...] [msg]\n"
@@ -105,6 +138,11 @@ func (hub *Hub) SendMessage(fromClient *Client, message string) {
     }
 }
 
+/**
+ * The function implements the /list command.
+ *
+ * @param Client forClient
+ */
 func (hub *Hub) ListClients(forClient *Client) {
     onlyMe := true
     for _, client := range hub.clients {
@@ -118,7 +156,12 @@ func (hub *Hub) ListClients(forClient *Client) {
     }
 }
 
-func (hub *Hub) QuitClient(client *Client) {
+/**
+ * The function implements the /quit command.
+ *
+ * @param Client client
+ */
+func (hub *Hub) UnjoinClient(client *Client) {
     var tmpClients = make([]*Client, 0)
     for _, c := range hub.clients {
         if (c.user_id != client.user_id) {
@@ -128,7 +171,16 @@ func (hub *Hub) QuitClient(client *Client) {
     hub.clients = tmpClients
 }
 
-func CreateHub() *Hub {
+/**
+ * The function implements the /whoami command.
+ *
+ * @param Client client
+ */
+func (hub *Hub) TellIdentity(client *Client) {
+    client.out <- "hub> " + fmt.Sprintf("%d", client.user_id) + "\n"
+}
+
+func InitHub() *Hub {
     writer := bufio.NewWriter(os.Stdout)
 
     hub := &Hub{
@@ -139,12 +191,17 @@ func CreateHub() *Hub {
         writer: writer,
     }
 
-    go hub.Listen()
+    go hub.ListenChannels()
 
     return hub
 }
 
-func CreateClient(connection net.Conn) *Client {
+/**
+ * The function initialize a new client.
+ *
+ * @return Client
+ */
+func InitClient(connection net.Conn) *Client {
     writer := bufio.NewWriter(connection)
     reader := bufio.NewReader(connection)
 
@@ -158,11 +215,17 @@ func CreateClient(connection net.Conn) *Client {
         user_id: user_id,
     }
 
-    client.Listen()
+    client.InitCommunication()
 
     return client
 }
 
+/**
+ * The function handles errors.
+ *
+ * @param error err
+ * @param string message
+ */
 func HandleError(err error, message string) {
     if (err != nil) {
         fmt.Println("ERROR (" + message + "): ", err.Error())
@@ -172,7 +235,7 @@ func HandleError(err error, message string) {
 
 func main() {
     fmt.Println("Server initializing...")
-    hub := CreateHub()
+    hub := InitHub()
 
     listener, err := net.Listen(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
     HandleError(err, "LISTEN")

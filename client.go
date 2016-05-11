@@ -15,12 +15,20 @@ const (
     CONNECTION_PORT = "7010"
 )
 
+// tells the application state (whether it's running or not)
 var running bool
+
+// supported commands by the protocol
 var commands = [4]string{"whoami", "list", "msg", "quit"}
 
-func Send(conn net.Conn) {
+/**
+ * The function sends data from the client to the hub.
+ *
+ * @param net.Conn hub
+ */
+func Send(hub net.Conn) {
     reader := bufio.NewReader(os.Stdin)
-    writer := bufio.NewWriter(conn)
+    writer := bufio.NewWriter(hub)
 
     for ;running; {
         input, err := reader.ReadString('\n')
@@ -43,8 +51,13 @@ func Send(conn net.Conn) {
     }
 }
 
-func Read(conn net.Conn) {
-    reader := bufio.NewReader(conn)
+/**
+ * The function reads data from the hub and prints it to the client.
+ *
+ * @param net.Conn hub
+ */
+func Read(hub net.Conn) {
+    reader := bufio.NewReader(hub)
     writer := bufio.NewWriter(os.Stdout)
 
     for ;running; {
@@ -56,6 +69,12 @@ func Read(conn net.Conn) {
     }
 }
 
+/**
+ * The function tells if the asked command is a supported command by the protocol.
+ *
+ * @param string command
+ * @return bool
+ */
 func IsSupportedCommand(command string) bool {
     for _, c := range commands {
         if (strings.HasPrefix(command, "/" + c)) {
@@ -65,6 +84,12 @@ func IsSupportedCommand(command string) bool {
     return false
 }
 
+/**
+ * The function handles errors.
+ *
+ * @param error err
+ * @param string message
+ */
 func HandleError(err error, message string) {
     if (err != nil) {
         fmt.Println("ERROR (" + message + "): ", err.Error())
@@ -74,14 +99,14 @@ func HandleError(err error, message string) {
 
 func main() {
     running = true
-    conn, err := net.Dial(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
+    hub, err := net.Dial(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
     HandleError(err, "DIAL")
 
-    // close the connection when main() returns
-    defer conn.Close()
+    // close the connection when the main() returns
+    defer hub.Close()
 
-    go Send(conn)
-    go Read(conn)
+    go Send(hub)
+    go Read(hub)
 
     for ;running; {
         time.Sleep(3600 * 24 * 7 * 365);
