@@ -27,8 +27,8 @@ var commands = [4]string{"whoami", "list", "msg", "quit"}
  * @param net.Conn hub
  */
 func Send(hub net.Conn) {
-    reader := bufio.NewReader(os.Stdin)
-    writer := bufio.NewWriter(hub)
+    reader := *bufio.NewReader(os.Stdin)
+    writer := *bufio.NewWriter(hub)
 
     for ;running; {
         input, err := reader.ReadString('\n')
@@ -57,8 +57,8 @@ func Send(hub net.Conn) {
  * @param net.Conn hub
  */
 func Read(hub net.Conn) {
-    reader := bufio.NewReader(hub)
-    writer := bufio.NewWriter(os.Stdout)
+    reader := *bufio.NewReader(hub)
+    writer := *bufio.NewWriter(os.Stdout)
 
     for ;running; {
         input, err := reader.ReadString('\n')

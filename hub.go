@@ -26,17 +26,9 @@ type Client struct {
 type Hub struct {
     in chan string
     out chan string
-    clients []*Client
     connections chan net.Conn
+    clients []*Client
     writer *bufio.Writer
-}
-
-/**
- * The function initializes communication from and to the client.
- */
-func (client *Client) InitCommunication() {
-    go client.Read()
-    go client.Send()
 }
 
 /**
@@ -205,6 +197,7 @@ func InitClient(connection net.Conn) *Client {
     writer := bufio.NewWriter(connection)
     reader := bufio.NewReader(connection)
 
+    // generate unique user_id for the client
     user_id := uint64(time.Now().UnixNano())
 
     client := &Client{
@@ -215,7 +208,8 @@ func InitClient(connection net.Conn) *Client {
         user_id: user_id,
     }
 
-    client.InitCommunication()
+    go client.Read()
+    go client.Send()
 
     return client
 }
