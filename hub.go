@@ -88,14 +88,18 @@ func (hub *Hub) Listen() {
     }
 }
 
-func (hub *Hub) SendMessage(forClient *Client, message string) {
+func (hub *Hub) SendMessage(fromClient *Client, message string) {
+    if (strings.Count(message, " ") <= 1) {
+        fromClient.out <- "hub> Invalid /msg command parameters. Use /msg [user_id1,user_id2,...] [msg]\n"
+        return
+    }
     s := strings.Split(message, " ");
     receivers, body := s[1], s[2]
     r := strings.Split(receivers, ",")
     for _, client := range hub.clients {
         for _, receiver := range r {
             if (fmt.Sprintf("%d", client.user_id) == receiver) {
-                client.out <- fmt.Sprintf("%d", forClient.user_id) + "> " + body
+                client.out <- fmt.Sprintf("%d", fromClient.user_id) + "> " + body
             }
         }
     }
