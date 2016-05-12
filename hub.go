@@ -55,7 +55,6 @@ func (client *Client) Send() {
 
 /**
  * The function joins client to the hub.
- *
  * @param net.Conn connection
  */
 func (hub *Hub) Join(connection net.Conn) {
@@ -67,7 +66,6 @@ func (hub *Hub) Join(connection net.Conn) {
 
 /**
  * The function decides what to do for the client requests.
- *
  * @param Client client
  */
 func (hub *Hub) ListenClient(client *Client) {
@@ -87,7 +85,6 @@ func (hub *Hub) ListenClient(client *Client) {
 
 /**
  * The function prints data to the hub.
- *
  * @param string message
  */
 func (hub *Hub) Write(message []byte) {
@@ -113,7 +110,6 @@ func (hub *Hub) ListenChannels() {
 
 /**
  * The function implements the /msg command.
- *
  * @param Client fromClient
  * @param string message
  */
@@ -136,7 +132,6 @@ func (hub *Hub) SendMessage(fromClient *Client, message []byte) {
 
 /**
  * The function implements the /list command.
- *
  * @param Client forClient
  */
 func (hub *Hub) ListClients(forClient *Client) {
@@ -154,7 +149,6 @@ func (hub *Hub) ListClients(forClient *Client) {
 
 /**
  * The function implements the /quit command.
- *
  * @param Client client
  */
 func (hub *Hub) UnjoinClient(client *Client) {
@@ -169,7 +163,6 @@ func (hub *Hub) UnjoinClient(client *Client) {
 
 /**
  * The function implements the /whoami command.
- *
  * @param Client client
  */
 func (hub *Hub) TellIdentity(client *Client) {
@@ -194,7 +187,6 @@ func InitHub() *Hub {
 
 /**
  * The function initialize a new client.
- *
  * @return Client
  */
 func InitClient(connection net.Conn) *Client {
@@ -220,7 +212,6 @@ func InitClient(connection net.Conn) *Client {
 
 /**
  * The function handles errors.
- *
  * @param error err
  * @param string message
  */

@@ -23,7 +23,6 @@ var commands = [4]string{"whoami", "list", "msg", "quit"}
 
 /**
  * The function sends data from the client to the hub.
- *
  * @param net.Conn hub
  */
 func Send(hub net.Conn) {
@@ -55,7 +54,6 @@ func Send(hub net.Conn) {
 
 /**
  * The function reads data from the hub and prints it to the client.
- *
  * @param net.Conn hub
  */
 func Read(hub net.Conn) {
@@ -75,7 +73,6 @@ func Read(hub net.Conn) {
 
 /**
  * The function tells if the asked command is a supported command by the protocol.
- *
  * @param string command
  * @return bool
  */
@@ -90,7 +87,6 @@ func IsSupportedCommand(command []byte) bool {
 
 /**
  * The function handles errors.
- *
  * @param error err
  * @param string message
  */
