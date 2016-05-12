@@ -6,7 +6,7 @@ import (
     "bufio"
     "os"
     "time"
-    "strings"
+    "bytes"
 )
 
 const (
@@ -31,14 +31,16 @@ func Send(hub net.Conn) {
     writer := *bufio.NewWriter(hub)
 
     for ;running; {
-        input, err := reader.ReadString('\n')
+        input, err := reader.ReadBytes('\n')
         HandleError(err, "STDIN READ")
 
         if (IsSupportedCommand(input)) {
-            if (strings.HasPrefix(input, "/quit")) {
+            if (bytes.HasPrefix(input, []byte("/quit"))) {
                 running = false
             }
-            writer.WriteString(input)
+            for _, b := range input {
+                writer.WriteByte(b)
+            }
             writer.Flush()
         } else {
             fmt.Println("----------------------")
@@ -61,10 +63,12 @@ func Read(hub net.Conn) {
     writer := *bufio.NewWriter(os.Stdout)
 
     for ;running; {
-        input, err := reader.ReadString('\n')
+        input, err := reader.ReadBytes('\n')
         HandleError(err, "CONNECTION READ")
 
-        writer.WriteString(input)
+        for _, b := range input {
+            writer.WriteByte(b)
+        }
         writer.Flush()
     }
 }
@@ -75,9 +79,9 @@ func Read(hub net.Conn) {
  * @param string command
  * @return bool
  */
-func IsSupportedCommand(command string) bool {
+func IsSupportedCommand(command []byte) bool {
     for _, c := range commands {
-        if (strings.HasPrefix(command, "/" + c)) {
+        if (bytes.HasPrefix(command, append([]byte("/"), []byte(c)...))) {
             return true
         }
     }

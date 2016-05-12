@@ -6,7 +6,7 @@ import (
     "fmt"
     "os"
     "time"
-    "strings"
+    "bytes"
 )
 
 const (
@@ -16,16 +16,16 @@ const (
 )
 
 type Client struct {
-    in chan string
-    out chan string
+    in chan []byte
+    out chan []byte
     user_id uint64
     reader *bufio.Reader
     writer *bufio.Writer
 }
 
 type Hub struct {
-    in chan string
-    out chan string
+    in chan []byte
+    out chan []byte
     connections chan net.Conn
     clients []*Client
     writer *bufio.Writer
@@ -36,7 +36,7 @@ type Hub struct {
  */
 func (client *Client) Read() {
     for {
-        line, _ := client.reader.ReadString('\n')
+        line, _ := client.reader.ReadBytes('\n')
         client.in <- line
     }
 }
@@ -46,7 +46,9 @@ func (client *Client) Read() {
  */
 func (client *Client) Send() {
     for data := range client.out {
-        client.writer.WriteString(data)
+        for _, b := range data {
+            client.writer.WriteByte(b)
+        }
         client.writer.Flush()
     }
 }
@@ -71,13 +73,13 @@ func (hub *Hub) Join(connection net.Conn) {
 func (hub *Hub) ListenClient(client *Client) {
     for {
         in := <-client.in
-        if (strings.HasPrefix(in, "/whoami")) {
+        if (bytes.HasPrefix(in, []byte("/whoami"))) {
             hub.TellIdentity(client)
-        } else if (strings.HasPrefix(in, "/list")) {
+        } else if (bytes.HasPrefix(in, []byte("/list"))) {
             hub.ListClients(client)
-        } else if (strings.HasPrefix(in, "/msg")) {
+        } else if (bytes.HasPrefix(in, []byte("/msg"))) {
             hub.SendMessage(client, in)
-        } else if (strings.HasPrefix(in, "/quit")) {
+        } else if (bytes.HasPrefix(in, []byte("/quit"))) {
             hub.UnjoinClient(client)
         }
     }
@@ -88,8 +90,10 @@ func (hub *Hub) ListenClient(client *Client) {
  *
  * @param string message
  */
-func (hub *Hub) Write(message string) {
-    hub.writer.WriteString(message)
+func (hub *Hub) Write(message []byte) {
+    for _, b := range message {
+        hub.writer.WriteByte(b)
+    }
     hub.writer.Flush()
 }
 
@@ -113,18 +117,18 @@ func (hub *Hub) ListenChannels() {
  * @param Client fromClient
  * @param string message
  */
-func (hub *Hub) SendMessage(fromClient *Client, message string) {
-    if (strings.Count(message, " ") <= 1) {
-        fromClient.out <- "hub> Invalid /msg command parameters. Use /msg [user_id1,user_id2,...] [msg]\n"
+func (hub *Hub) SendMessage(fromClient *Client, message []byte) {
+    if (bytes.Count(message, []byte(" ")) <= 1) {
+        fromClient.out <- []byte("hub> Invalid /msg command parameters. Use /msg [user_id1,user_id2,...] [msg]\n")
         return
     }
-    s := strings.Split(message, " ");
+    s := bytes.Split(message, []byte(" "));
     receivers, body := s[1], s[2]
-    r := strings.Split(receivers, ",")
+    r := bytes.Split(receivers, []byte(","))
     for _, client := range hub.clients {
         for _, receiver := range r {
-            if (fmt.Sprintf("%d", client.user_id) == receiver) {
-                client.out <- fmt.Sprintf("%d", fromClient.user_id) + "> " + body
+            if (fmt.Sprintf("%d", client.user_id) == string(receiver)) {
+                client.out <- append([]byte(fmt.Sprintf("%d", fromClient.user_id) + "> "), body...)
             }
         }
     }
@@ -139,12 +143,12 @@ func (hub *Hub) ListClients(forClient *Client) {
     onlyMe := true
     for _, client := range hub.clients {
         if (forClient.user_id != client.user_id) {
-            forClient.out <- "hub> " + fmt.Sprintf("%d", client.user_id) + "\n"
+            forClient.out <- []byte("hub> " + fmt.Sprintf("%d", client.user_id) + "\n")
             onlyMe = false
         }
     }
     if (onlyMe == true) {
-        forClient.out <- "hub> No one else here :(\n"
+        forClient.out <- []byte("hub> No one else here :(\n")
     }
 }
 
@@ -169,7 +173,7 @@ func (hub *Hub) UnjoinClient(client *Client) {
  * @param Client client
  */
 func (hub *Hub) TellIdentity(client *Client) {
-    client.out <- "hub> " + fmt.Sprintf("%d", client.user_id) + "\n"
+    client.out <- []byte("hub> " + fmt.Sprintf("%d", client.user_id) + "\n")
 }
 
 func InitHub() *Hub {
@@ -178,8 +182,8 @@ func InitHub() *Hub {
     hub := &Hub{
         clients: make([]*Client, 0),
         connections: make(chan net.Conn),
-        in: make(chan string),
-        out: make(chan string),
+        in: make(chan []byte),
+        out: make(chan []byte),
         writer: writer,
     }
 
@@ -201,8 +205,8 @@ func InitClient(connection net.Conn) *Client {
     user_id := uint64(time.Now().UnixNano())
 
     client := &Client{
-        in: make(chan string),
-        out: make(chan string),
+        in: make(chan []byte),
+        out: make(chan []byte),
         reader: reader,
         writer: writer,
         user_id: user_id,
