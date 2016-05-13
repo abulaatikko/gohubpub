@@ -7,12 +7,15 @@ import (
     "os"
     "time"
     "bytes"
+    "errors"
 )
 
 const (
     CONNECTION_TYPE = "tcp"
     CONNECTION_HOST = "localhost"
     CONNECTION_PORT = "7010"
+    MAX_MESSAGE_BODY_SIZE = 1024 * 1024
+    MAX_RECEIVERS = 255
 )
 
 // tells the application state (whether it's running or not)
@@ -36,6 +39,20 @@ func Send(hub net.Conn) {
         if (IsSupportedCommand(input)) {
             if (bytes.HasPrefix(input, []byte("/quit"))) {
                 running = false
+            }
+            if (bytes.HasPrefix(input, []byte("/msg"))) {
+                inputParts := bytes.SplitN(input, []byte(" "), 3)
+                command := inputParts[0]
+                receivers := inputParts[1]
+                body := inputParts[2]
+                if (len(body) > MAX_MESSAGE_BODY_SIZE) {
+                    errorMsg := "Message body too large."
+                    HandleError(errors.New(errorMsg), errorMsg)
+                }
+                receiversParts := bytes.SplitN(receivers, []byte(","), MAX_RECEIVERS)
+
+                receiversJoined := bytes.Join(receiversParts, []byte(","))
+                input = append(command, append([]byte(" "), append(receiversJoined, append([]byte(" "), body...)...)...)...)
             }
             for _, b := range input {
                 writer.WriteByte(b)

@@ -114,11 +114,12 @@ func (hub *Hub) ListenChannels() {
  * @param string message
  */
 func (hub *Hub) SendMessage(fromClient *Client, message []byte) {
+    hub.in <- message
     if (bytes.Count(message, []byte(" ")) <= 1) {
         fromClient.out <- []byte("hub> Invalid /msg command parameters. Use /msg [user_id1,user_id2,...] [msg]\n")
         return
     }
-    s := bytes.Split(message, []byte(" "));
+    s := bytes.SplitN(message, []byte(" "), 3);
     receivers, body := s[1], s[2]
     r := bytes.Split(receivers, []byte(","))
     for _, client := range hub.clients {
