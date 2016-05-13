@@ -13,6 +13,11 @@ const (
     CONNECTION_TYPE = "tcp"
     CONNECTION_HOST = "localhost"
     CONNECTION_PORT = "7010"
+    COMMAND_IDENTITY = "whoami"
+    COMMAND_LIST = "list"
+    COMMAND_SEND_MESSAGE = "msg"
+    COMMAND_QUIT = "quit"
+    COMMAND_PREFIX = "/"
 )
 
 type Client struct {
@@ -71,13 +76,13 @@ func (hub *Hub) Join(connection net.Conn) {
 func (hub *Hub) ListenClient(client *Client) {
     for {
         in := <-client.in
-        if (bytes.HasPrefix(in, []byte("/whoami"))) {
+        if (IsIdentityCommand(in)) {
             hub.TellIdentity(client)
-        } else if (bytes.HasPrefix(in, []byte("/list"))) {
+        } else if (IsListCommand(in)) {
             hub.ListClients(client)
-        } else if (bytes.HasPrefix(in, []byte("/msg"))) {
+        } else if (IsSendMessageCommand(in)) {
             hub.SendMessage(client, in)
-        } else if (bytes.HasPrefix(in, []byte("/quit"))) {
+        } else if (IsQuitCommand(in)) {
             hub.UnjoinClient(client)
         }
     }
@@ -114,7 +119,6 @@ func (hub *Hub) ListenChannels() {
  * @param string message
  */
 func (hub *Hub) SendMessage(fromClient *Client, message []byte) {
-    hub.in <- message
     if (bytes.Count(message, []byte(" ")) <= 1) {
         fromClient.out <- []byte("hub> Invalid /msg command parameters. Use /msg [user_id1,user_id2,...] [msg]\n")
         return
@@ -221,6 +225,51 @@ func HandleError(err error, message string) {
         fmt.Println("ERROR (" + message + "): ", err.Error())
         os.Exit(1)
     }
+}
+
+/**
+ * The function tells if the asked command is a IDENTITY command.
+ * @param []byte command
+ * @return bool
+ */
+func IsIdentityCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_IDENTITY)
+}
+
+/**
+ * The function tells if the asked command is a LIST command.
+ * @param []byte command
+ * @return bool
+ */
+func IsListCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_LIST)
+}
+
+/**
+ * The function tells if the asked command is a SEND_MESSAGE command.
+ * @param []byte command
+ * @return bool
+ */
+func IsSendMessageCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_SEND_MESSAGE)
+}
+
+/**
+ * The function tells if the asked command is a QUIT command.
+ * @param []byte command
+ * @return bool
+ */
+func IsQuitCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_QUIT)
+}
+
+/**
+ * The function tells if the asked command is a given command.
+ * @param []byte command
+ * @return bool
+ */
+func IsCommand(commandCandidate []byte, command string) bool {
+    return bytes.HasPrefix(commandCandidate, []byte(COMMAND_PREFIX + command))
 }
 
 func main() {

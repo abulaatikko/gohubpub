@@ -16,13 +16,18 @@ const (
     CONNECTION_PORT = "7010"
     MAX_MESSAGE_BODY_SIZE = 1024 * 1024
     MAX_RECEIVERS = 255
+    COMMAND_IDENTITY = "whoami"
+    COMMAND_LIST = "list"
+    COMMAND_SEND_MESSAGE = "msg"
+    COMMAND_QUIT = "quit"
+    COMMAND_PREFIX = "/"
 )
 
 // tells the application state (whether it's running or not)
 var running bool
 
 // supported commands by the protocol
-var commands = [4]string{"whoami", "list", "msg", "quit"}
+var commands = [4]string{COMMAND_IDENTITY, COMMAND_LIST, COMMAND_SEND_MESSAGE, COMMAND_QUIT}
 
 /**
  * The function sends data from the client to the hub.
@@ -37,16 +42,16 @@ func Send(hub net.Conn) {
         HandleError(err, "STDIN READ")
 
         if (IsSupportedCommand(input)) {
-            if (bytes.HasPrefix(input, []byte("/quit"))) {
+            if (IsQuitCommand(input)) {
                 running = false
             }
-            if (bytes.HasPrefix(input, []byte("/msg"))) {
+            if (IsSendMessageCommand(input)) {
                 inputParts := bytes.SplitN(input, []byte(" "), 3)
                 command := inputParts[0]
                 receivers := inputParts[1]
                 body := inputParts[2]
                 if (len(body) > MAX_MESSAGE_BODY_SIZE) {
-                    errorMsg := "Message body too large."
+                    errorMsg := "Message body is too large."
                     HandleError(errors.New(errorMsg), errorMsg)
                 }
                 receiversParts := bytes.SplitN(receivers, []byte(","), MAX_RECEIVERS)
@@ -62,7 +67,7 @@ func Send(hub net.Conn) {
             fmt.Println("----------------------")
             fmt.Println("Supported commands:")
             for _, c := range commands {
-                fmt.Println("  /" + c)
+                fmt.Println("  " + COMMAND_PREFIX + c)
             }
             fmt.Println("----------------------")
         }
@@ -90,16 +95,56 @@ func Read(hub net.Conn) {
 
 /**
  * The function tells if the asked command is a supported command by the protocol.
- * @param string command
+ * @param []byte command
  * @return bool
  */
 func IsSupportedCommand(command []byte) bool {
-    for _, c := range commands {
-        if (bytes.HasPrefix(command, append([]byte("/"), []byte(c)...))) {
-            return true
-        }
-    }
-    return false
+    return IsIdentityCommand(command) || IsListCommand(command) || IsSendMessageCommand(command) || IsQuitCommand(command)
+}
+
+/**
+ * The function tells if the asked command is a IDENTITY command.
+ * @param []byte command
+ * @return bool
+ */
+func IsIdentityCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_IDENTITY)
+}
+
+/**
+ * The function tells if the asked command is a LIST command.
+ * @param []byte command
+ * @return bool
+ */
+func IsListCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_LIST)
+}
+
+/**
+ * The function tells if the asked command is a SEND_MESSAGE command.
+ * @param []byte command
+ * @return bool
+ */
+func IsSendMessageCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_SEND_MESSAGE)
+}
+
+/**
+ * The function tells if the asked command is a QUIT command.
+ * @param []byte command
+ * @return bool
+ */
+func IsQuitCommand(command []byte) bool {
+    return IsCommand(command, COMMAND_QUIT)
+}
+
+/**
+ * The function tells if the asked command is a given command.
+ * @param []byte command
+ * @return bool
+ */
+func IsCommand(commandCandidate []byte, command string) bool {
+    return bytes.HasPrefix(commandCandidate, []byte(COMMAND_PREFIX + command))
 }
 
 /**
