@@ -123,9 +123,11 @@ func (hub *Hub) SendMessage(fromClient *Client, message []byte) {
         fromClient.out <- []byte("hub> Invalid /msg command parameters. Use /msg [user_id1,user_id2,...] [msg]\n")
         return
     }
+
     s := bytes.SplitN(message, []byte(" "), 3);
     receivers, body := s[1], s[2]
     r := bytes.Split(receivers, []byte(","))
+
     for _, client := range hub.clients {
         for _, receiver := range r {
             if (fmt.Sprintf("%d", client.user_id) == string(receiver)) {

@@ -41,36 +41,23 @@ func Send(hub net.Conn) {
         input, err := reader.ReadBytes('\n')
         HandleError(err, "STDIN READ")
 
-        if (IsSupportedCommand(input)) {
-            if (IsQuitCommand(input)) {
-                running = false
-            }
-            if (IsSendMessageCommand(input)) {
-                inputParts := bytes.SplitN(input, []byte(" "), 3)
-                command := inputParts[0]
-                receivers := inputParts[1]
-                body := inputParts[2]
-                if (len(body) > MAX_MESSAGE_BODY_SIZE) {
-                    errorMsg := "Message body is too large."
-                    HandleError(errors.New(errorMsg), errorMsg)
-                }
-                receiversParts := bytes.SplitN(receivers, []byte(","), MAX_RECEIVERS)
-
-                receiversJoined := bytes.Join(receiversParts, []byte(","))
-                input = append(command, append([]byte(" "), append(receiversJoined, append([]byte(" "), body...)...)...)...)
-            }
-            for _, b := range input {
-                writer.WriteByte(b)
-            }
-            writer.Flush()
-        } else {
-            fmt.Println("----------------------")
-            fmt.Println("Supported commands:")
-            for _, c := range commands {
-                fmt.Println("  " + COMMAND_PREFIX + c)
-            }
-            fmt.Println("----------------------")
+        if (!IsSupportedCommand(input)) {
+            PrintCommandsList()
+            continue
         }
+
+        if (IsQuitCommand(input)) {
+            running = false
+        }
+
+        if (IsSendMessageCommand(input)) {
+            input = ValidateSendMessage(input)
+        }
+
+        for _, b := range input {
+            writer.WriteByte(b)
+        }
+        writer.Flush()
     }
 }
 
@@ -91,6 +78,40 @@ func Read(hub net.Conn) {
         }
         writer.Flush()
     }
+}
+
+/**
+ * The function validates the send message.
+ * @param []byte input
+ * @return []byte
+ */
+func ValidateSendMessage(input []byte) []byte {
+    inputParts := bytes.SplitN(input, []byte(" "), 3)
+    command := inputParts[0]
+    receivers := inputParts[1]
+    body := inputParts[2]
+
+    if (len(body) > MAX_MESSAGE_BODY_SIZE) {
+        errorMsg := "Message body is too large."
+        HandleError(errors.New(errorMsg), errorMsg)
+    }
+
+    receiversParts := bytes.SplitN(receivers, []byte(","), MAX_RECEIVERS)
+    receiversJoined := bytes.Join(receiversParts, []byte(","))
+
+    return append(command, append([]byte(" "), append(receiversJoined, append([]byte(" "), body...)...)...)...)
+}
+
+/**
+ * The function prints a command list
+ */
+func PrintCommandsList() {
+    fmt.Println("----------------------")
+    fmt.Println("Supported commands:")
+    for _, c := range commands {
+        fmt.Println("  " + COMMAND_PREFIX + c)
+    }
+    fmt.Println("----------------------")
 }
 
 /**
