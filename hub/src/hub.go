@@ -1,4 +1,4 @@
-package main
+package hub
 
 import (
     "net"
@@ -7,17 +7,7 @@ import (
     "os"
     "time"
     "bytes"
-)
-
-const (
-    CONNECTION_TYPE = "tcp"
-    CONNECTION_HOST = "localhost"
-    CONNECTION_PORT = "7010"
-    COMMAND_IDENTITY = "whoami"
-    COMMAND_LIST = "list"
-    COMMAND_SEND_MESSAGE = "msg"
-    COMMAND_QUIT = "quit"
-    COMMAND_PREFIX = "/"
+    "../../util"
 )
 
 type Client struct {
@@ -76,13 +66,13 @@ func (hub *Hub) Join(connection net.Conn) {
 func (hub *Hub) ListenClient(client *Client) {
     for {
         in := <-client.in
-        if (IsIdentityCommand(in)) {
+        if (util.IsIdentityCommand(in)) {
             hub.TellIdentity(client)
-        } else if (IsListCommand(in)) {
+        } else if (util.IsListCommand(in)) {
             hub.ListClients(client)
-        } else if (IsSendMessageCommand(in)) {
+        } else if (util.IsSendMessageCommand(in)) {
             hub.SendMessage(client, in)
-        } else if (IsQuitCommand(in)) {
+        } else if (util.IsQuitCommand(in)) {
             hub.UnjoinClient(client)
         }
     }
@@ -165,6 +155,7 @@ func (hub *Hub) UnjoinClient(client *Client) {
             tmpClients = append(tmpClients, c)
         }
     }
+    client.out <- []byte("/quit\n")
     hub.clients = tmpClients
 }
 
@@ -176,6 +167,10 @@ func (hub *Hub) TellIdentity(client *Client) {
     client.out <- []byte("hub> " + fmt.Sprintf("%d", client.user_id) + "\n")
 }
 
+/**
+ * The function initialize a hub.
+ * @return Hub hub
+ */
 func InitHub() *Hub {
     writer := bufio.NewWriter(os.Stdout)
 
@@ -217,74 +212,6 @@ func InitClient(connection net.Conn) *Client {
     return client
 }
 
-/**
- * The function handles errors.
- * @param error err
- * @param string message
- */
-func HandleError(err error, message string) {
-    if (err != nil) {
-        fmt.Println("ERROR (" + message + "): ", err.Error())
-        os.Exit(1)
-    }
+func (hub *Hub) AttachConnection(connection net.Conn) {
+    hub.connections <- connection
 }
-
-/**
- * The function tells if the asked command is a IDENTITY command.
- * @param []byte command
- * @return bool
- */
-func IsIdentityCommand(command []byte) bool {
-    return IsCommand(command, COMMAND_IDENTITY)
-}
-
-/**
- * The function tells if the asked command is a LIST command.
- * @param []byte command
- * @return bool
- */
-func IsListCommand(command []byte) bool {
-    return IsCommand(command, COMMAND_LIST)
-}
-
-/**
- * The function tells if the asked command is a SEND_MESSAGE command.
- * @param []byte command
- * @return bool
- */
-func IsSendMessageCommand(command []byte) bool {
-    return IsCommand(command, COMMAND_SEND_MESSAGE)
-}
-
-/**
- * The function tells if the asked command is a QUIT command.
- * @param []byte command
- * @return bool
- */
-func IsQuitCommand(command []byte) bool {
-    return IsCommand(command, COMMAND_QUIT)
-}
-
-/**
- * The function tells if the asked command is a given command.
- * @param []byte command
- * @return bool
- */
-func IsCommand(commandCandidate []byte, command string) bool {
-    return bytes.HasPrefix(commandCandidate, []byte(COMMAND_PREFIX + command))
-}
-
-func main() {
-    fmt.Println("Server initializing...")
-    hub := InitHub()
-
-    listener, err := net.Listen(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
-    HandleError(err, "LISTEN")
-
-    for {
-        conn, err := listener.Accept()
-        HandleError(err, "ACCEPT")
-        hub.connections <- conn
-    }
-}
-
