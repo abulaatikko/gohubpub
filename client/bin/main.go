@@ -14,7 +14,6 @@ const (
 )
 
 func main() {
-
     conn, err := net.Dial(CONNECTION_TYPE, CONNECTION_HOST + ":" + CONNECTION_PORT)
     util.HandleError(err, "DIAL")
 
@@ -22,7 +21,7 @@ func main() {
     defer conn.Close()
 
     var wg sync.WaitGroup
-    wg.Add(1)
+    wg.Add(2)
     go func() {
         client.Send(conn)
         wg.Done()
@@ -32,5 +31,4 @@ func main() {
         wg.Done()
     }()
     wg.Wait()
-
 }
