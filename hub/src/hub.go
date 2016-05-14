@@ -7,7 +7,7 @@ import (
     "os"
     "time"
     "bytes"
-    "../../util"
+    util "../../util"
 )
 
 type Client struct {
