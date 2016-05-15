@@ -1,33 +1,27 @@
 package util_test
 
 import (
-    "../util"
+    util "../util"
     "testing"
 )
 
-func TestValidIsQuitCommand(t *testing.T) {
+func TestIsQuitCommand(t *testing.T) {
     command := []byte("/quit")
     if (!util.IsQuitCommand(command)) {
         t.Error("/quit IsQuitCommand")
     }
-}
 
-func TestListIsQuitCommand(t *testing.T) {
-    command := []byte("/list")
+    command = []byte("/list")
     if (util.IsQuitCommand(command)) {
         t.Error("/list isnt IsQuitCommand")
     }
-}
 
-func TestInvalidQuitIsQuitCommand(t *testing.T) {
-    command := []byte("/ quit")
+    command = []byte("/ quit")
     if (util.IsQuitCommand(command)) {
         t.Error("/ quit isnt IsQuitCommand")
     }
-}
 
-func TestWithSomethingExtraIsQuitCommand(t *testing.T) {
-    command := []byte("/quit something extra doesnt affect")
+    command = []byte("/quit something extra doesnt affect")
     if (!util.IsQuitCommand(command)) {
         t.Error("/quit something extra is IsQuitCommand")
     }

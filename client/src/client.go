@@ -6,7 +6,7 @@ import (
     "bufio"
     "os"
     "bytes"
-    "errors"
+    "math"
     util "../../util"
 )
 
@@ -86,12 +86,22 @@ func ValidateSendMessage(input []byte) []byte {
     body := inputParts[2]
 
     if (len(body) > MAX_MESSAGE_BODY_SIZE) {
-        errorMsg := "Message body is too large."
-        util.HandleError(errors.New(errorMsg), errorMsg)
+        newBody := []byte{}
+        for _, value := range body {
+            newBody = append(newBody, []byte{value}...)
+            if (len(newBody) >= MAX_MESSAGE_BODY_SIZE) {
+                break;
+            }
+        }
+        body = newBody
     }
 
-    receiversParts := bytes.SplitN(receivers, []byte(","), MAX_RECEIVERS)
-    receiversJoined := bytes.Join(receiversParts, []byte(","))
+    receiversJoined := receivers
+    if (bytes.Contains(receivers, []byte(","))) {
+        receiversParts := bytes.SplitN(receivers, []byte(","), MAX_RECEIVERS + 1) // because SplitN returns the reminder as the last slice
+        len := int(math.Min(float64(len(receiversParts)), float64(MAX_RECEIVERS)))
+        receiversJoined = bytes.Join(receiversParts[:len], []byte(","))
+    }
 
     return append(command, append([]byte(" "), append(receiversJoined, append([]byte(" "), body...)...)...)...)
 }
