@@ -56,4 +56,20 @@ func TestValidateSendMessage(t *testing.T) {
         t.Error("/msg message body size check failed")
     }
 
+    // test json message body
+    json := "{\"books\":[{\"id\":1,\"language\":\"Java\",\"edition\":\"third\",\"author\":\"Herbert Schildt\"},{\"id\":7,\"language\":\"C++\",\"edition\":\"second\",\"author\":\"E.Balagurusamy\"}]}"
+    command = []byte("/msg 1234,2345,3456 " + json)
+    validatedCommand = client.ValidateSendMessage(command);
+    if (string(validatedCommand) != "/msg 1234,2345,3456 " + json) {
+        t.Error("/msg command failed")
+    }
+
+    // test binary message body
+    binary := "1F332D01"
+    command = []byte("/msg 1234,2345,3456 " + binary)
+    validatedCommand = client.ValidateSendMessage(command);
+    if (string(validatedCommand) != "/msg 1234,2345,3456 " + binary) {
+        t.Error("/msg command failed")
+    }
+
 }
