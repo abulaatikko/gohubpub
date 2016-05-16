@@ -65,7 +65,7 @@ func TestValidateSendMessage(t *testing.T) {
     }
 
     // test binary message body
-    binary := "1F332D01"
+    binary := "base64:TWFuIGlzIGRpc3Rpbmd1aXNoZWQsIG5vdCBvbmx5IGJ5IGhpcyByZWFzb24sIGJ1dCBieSB0aGlzIHNpbmd1bGFyIHBhc3Npb24gZnJvbSBvdGhlciBhbmltYWxzLCB3aGljaCBpcyBhIGx1c3Qgb2YgdGhlIG1pbmQsIHRoYXQgYnkgYSBwZXJzZXZlcmFuY2Ugb2YgZGVsaWdodCBpbiB0aGUgY29udGludWVkIGFuZCBpbmRlZmF0aWdhYmxlIGdlbmVyYXRpb24gb2Yga25vd2xlZGdlLCBleGNlZWRzIHRoZSBzaG9ydCB2ZWhlbWVuY2Ugb2YgYW55IGNhcm5hbCBwbGVhc3VyZS4="
     command = []byte("/msg 1234,2345,3456 " + binary)
     validatedCommand = client.ValidateSendMessage(command);
     if (string(validatedCommand) != "/msg 1234,2345,3456 " + binary) {
